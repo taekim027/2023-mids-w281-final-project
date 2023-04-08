@@ -31,7 +31,8 @@ class ImageGroup:
 
 class ImageDataset(List[ImageGroup]):
 
-    def __init__(self, root_dir: str) -> None:
+    @staticmethod
+    def from_directory(root_dir: str) -> 'ImageDataset':
         assert os.path.isdir(root_dir), f'{root_dir} is not a valid directory'
 
         print('Loading dataset...')
@@ -43,4 +44,19 @@ class ImageDataset(List[ImageGroup]):
                 groups[image.id] = ImageGroup(image.id, image.label)
             groups[image.id].add(image)
 
-        super().__init__(groups.values())
+        return ImageDataset(groups.values())
+
+    def filter(self, 
+        photo_augmentations: List[str] = None, 
+        sketch_augmentation: List[str] = None) -> 'ImageDataset':
+
+        filtered = ImageDataset()
+        for g in self:
+            filtered_g = ImageGroup(g.id, g.label)
+            filtered_g.photos = [p for p in g.photos if p.augmentation in photo_augmentations] \
+                if photo_augmentations else g.photos
+            filtered_g.sketches = [p for p in g.sketches if p.augmentation in sketch_augmentation] \
+                if sketch_augmentation else g.sketches
+
+            filtered.append(filtered_g)
+        return filtered
