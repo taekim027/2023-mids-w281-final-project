@@ -5,6 +5,7 @@ from typing import Dict, List
 import imageio.v3 as iio
 import numpy as np
 from itertools import chain
+import cv2
 from random import shuffle
 
 class ImageData:
@@ -74,3 +75,16 @@ class ImageDataset(List[ImageGroup]):
             start = end
 
         return splits
+
+    def get_labeled_sketch_dataset(self) -> (np.ndarray, np.ndarray):
+        X = []
+        Y = []
+        
+        for img in self:
+            for i in img.sketches:
+                fp = str(i.filepath.resolve())
+                img = cv2.imread(fp)
+                X.append(img)
+                Y.append(i.label)
+        print(f'Loaded {len(Y)} labeled sketches')
+        return np.array(X), np.array(Y)
