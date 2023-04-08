@@ -1,7 +1,8 @@
+from collections import defaultdict
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import imageio.v3 as iio
 import numpy as np
 from itertools import chain
@@ -49,6 +50,14 @@ class ImageDataset(List[ImageGroup]):
         print(f'Loaded {len(groups)} unique image IDs')
         return ImageDataset(groups.values())
 
+    @property
+    def num_classes(self) -> int:
+        return len({l.label for l in self})
+
+    @property
+    def image_size(self) -> Tuple:
+        return self[0].sketches[0].load().shape
+
     def filter(self, 
         photo_augmentations: List[str] = None, 
         sketch_augmentation: List[str] = None) -> 'ImageDataset':
@@ -64,19 +73,37 @@ class ImageDataset(List[ImageGroup]):
             filtered.append(filtered_g)
         return filtered
 
-    def split(self, ratios: List[float]) -> List['ImageDataset']:
-        shuffle(self)
+    def split(self, ratios: List[float], preserve_labels: bool = True) -> List['ImageDataset']:
 
-        start = 0
-        splits = []
-        for ratio in ratios:
-            end = start + int(len(self) * ratio)
-            splits.append(ImageDataset(self[start:end]))
-            start = end
+        def do_split(dataset: 'ImageDataset') -> List['ImageDataset']:
+            shuffle(dataset)
+            start = 0
+            splits = []
+            for ratio in ratios:
+                end = start + int(len(dataset) * ratio)
+                splits.append(ImageDataset(dataset[start:end]))
+                start = end
+
+            return splits
+
+        if not preserve_labels:
+            return do_split(self)
+
+        # Group by label
+        by_label: Dict[str, List[ImageGroup]] = defaultdict(list)
+        for g in self:
+            by_label[g.label].append(g)
+
+        # Split by each label
+        first_label, first_group = by_label.popitem()
+        splits = do_split(first_group)
+        for label, groups in by_label.items():
+            for existing, additional in zip(splits, do_split(groups)):
+                existing.extend(additional)
 
         return splits
 
-    def get_labeled_sketch_dataset(self) -> (np.ndarray, np.ndarray):
+    def get_labeled_sketch_dataset(self) -> Tuple[np.ndarray, np.ndarray]:
         X = []
         Y = []
         
