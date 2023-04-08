@@ -5,6 +5,7 @@ from typing import Dict, List
 import imageio.v3 as iio
 import numpy as np
 from itertools import chain
+import cv2
 
 class ImageData:
     def __init__(self, filepath: str) -> None:
@@ -44,3 +45,15 @@ class ImageDataset(List[ImageGroup]):
             groups[image.id].add(image)
 
         super().__init__(groups.values())
+
+    def get_img_label_dataset(self) -> (np.ndarray, np.ndarray):
+        X = []
+        Y = []
+        for img in self:
+            for i in img.photos + img.sketches:
+                fp = str(i.filepath.resolve())
+                img = cv2.imread(fp)
+
+                X.append(img)
+                Y.append(i.label)
+        return np.array(X), np.array(Y)
