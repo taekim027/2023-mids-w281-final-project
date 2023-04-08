@@ -76,14 +76,15 @@ class ImageDataset(List[ImageGroup]):
 
         return splits
 
-    def get_img_label_dataset(self) -> (np.ndarray, np.ndarray):
+    def get_labeled_sketch_dataset(self) -> (np.ndarray, np.ndarray):
         X = []
         Y = []
+        
         for img in self:
-            for i in img.photos + img.sketches:
+            for i in img.sketches:
                 fp = str(i.filepath.resolve())
                 img = cv2.imread(fp)
-
                 X.append(img)
                 Y.append(i.label)
+        print(f'Loaded {len(Y)} labeled sketches')
         return np.array(X), np.array(Y)
