@@ -5,6 +5,7 @@ from typing import Dict, List
 import imageio.v3 as iio
 import numpy as np
 from itertools import chain
+from random import shuffle
 
 class ImageData:
     def __init__(self, filepath: str) -> None:
@@ -44,6 +45,7 @@ class ImageDataset(List[ImageGroup]):
                 groups[image.id] = ImageGroup(image.id, image.label)
             groups[image.id].add(image)
 
+        print(f'Loaded {len(groups)} unique image IDs')
         return ImageDataset(groups.values())
 
     def filter(self, 
@@ -60,3 +62,15 @@ class ImageDataset(List[ImageGroup]):
 
             filtered.append(filtered_g)
         return filtered
+
+    def split(self, ratios: List[float]) -> List['ImageDataset']:
+        shuffle(self)
+
+        start = 0
+        splits = []
+        for ratio in ratios:
+            end = start + int(len(self) * ratio)
+            splits.append(ImageDataset(self[start:end]))
+            start = end
+
+        return splits
