@@ -21,3 +21,7 @@
 
 .vscode/
 file:/*
+
+
+# Don't upload model weights as it's too large
+*model_weights.h5
